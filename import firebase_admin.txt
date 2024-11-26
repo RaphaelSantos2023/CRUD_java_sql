@@ -1,0 +1,246 @@
+import firebase_admin
+from firebase_admin import credentials, db
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# Configuração do Firebase
+cred = credentials.Certificate("seu_arquivo.json")  # Caminho do arquivo JSON
+firebase_admin.initialize_app(cred, {
+    'databaseURL': 'https://seu-projeto.firebaseio.com'  # URL do Realtime Database
+})
+
+ref = db.reference('usuarios')  # Referência ao nó 'usuarios'
+
+# Funções CRUD
+def inserir():
+    nome = entry_nome.get()
+    email = entry_email.get()
+    if nome and email:
+        ref.push({"nome": nome, "email": email})
+        carregar_dados()
+        limpar_campos()
+    else:
+        messagebox.showwarning("Atenção", "Preencha todos os campos!")
+
+def atualizar():
+    selected_item = tree.selection()
+    if selected_item:
+        item_id = tree.item(selected_item)['values'][0]
+        nome = entry_nome.get()
+        email = entry_email.get()
+        if nome and email:
+            ref.child(item_id).update({"nome": nome, "email": email})
+            carregar_dados()
+            limpar_campos()
+        else:
+            messagebox.showwarning("Atenção", "Preencha todos os campos!")
+    else:
+        messagebox.showwarning("Atenção", "Selecione um usuário!")
+
+def deletar():
+    selected_item = tree.selection()
+    if selected_item:
+        item_id = tree.item(selected_item)['values'][0]
+        ref.child(item_id).delete()
+        carregar_dados()
+        limpar_campos()
+    else:
+        messagebox.showwarning("Atenção", "Selecione um usuário!")
+
+def carregar_dados():
+    for i in tree.get_children():
+        tree.delete(i)
+    dados = ref.get()
+    if dados:
+        for item_id, info in dados.items():
+            tree.insert("", tk.END, values=(item_id, info['nome'], info['email']))
+
+def selecionar_linha(event):
+    selected_item = tree.selection()
+    if selected_item:
+        item = tree.item(selected_item)
+        entry_nome.delete(0, tk.END)
+        entry_email.delete(0, tk.END)
+        entry_nome.insert(0, item['values'][1])
+        entry_email.insert(0, item['values'][2])
+
+def limpar_campos():
+    entry_nome.delete(0, tk.END)
+    entry_email.delete(0, tk.END)
+
+# Interface Gráfica (tkinter)
+root = tk.Tk()
+root.title("CRUD Firebase com Tkinter")
+root.geometry("500x400")
+
+# Campos de Entrada
+tk.Label(root, text="Nome").pack()
+entry_nome = tk.Entry(root)
+entry_nome.pack()
+
+tk.Label(root, text="Email").pack()
+entry_email = tk.Entry(root)
+entry_email.pack()
+
+# Botões CRUD
+frame_buttons = tk.Frame(root)
+frame_buttons.pack()
+
+btn_inserir = tk.Button(frame_buttons, text="Inserir", command=inserir)
+btn_inserir.grid(row=0, column=0, padx=5, pady=5)
+
+btn_atualizar = tk.Button(frame_buttons, text="Atualizar", command=atualizar)
+btn_atualizar.grid(row=0, column=1, padx=5, pady=5)
+
+btn_deletar = tk.Button(frame_buttons, text="Deletar", command=deletar)
+btn_deletar.grid(row=0, column=2, padx=5, pady=5)
+
+# Tabela Treeview
+tree = ttk.Treeview(root, columns=("ID", "Nome", "Email"), show="headings")
+tree.heading("ID", text="ID")
+tree.heading("Nome", text="Nome")
+tree.heading("Email", text="Email")
+tree.pack(expand=True, fill='both')
+
+tree.bind("<ButtonRelease-1>", selecionar_linha)
+
+# Carregar dados iniciais
+carregar_dados()
+
+root.mainloop()
+
+pip install firebase-admin
+
+
+---------------------------------------------------
+
+import mysql.connector
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# Configurações do Banco de Dados
+config = {
+    'user': 'seu_usuario',
+    'password': 'sua_senha',
+    'host': 'localhost',
+    'database': 'nome_do_banco'
+}
+
+# Função de Conexão
+def conectar():
+    return mysql.connector.connect(**config)
+
+# Funções CRUD
+def inserir():
+    nome = entry_nome.get()
+    email = entry_email.get()
+    if nome and email:
+        conn = conectar()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO usuarios (nome, email) VALUES (%s, %s)", (nome, email))
+        conn.commit()
+        conn.close()
+        carregar_dados()
+        limpar_campos()
+    else:
+        messagebox.showwarning("Atenção", "Preencha todos os campos!")
+
+def atualizar():
+    selected_item = tree.selection()
+    if selected_item:
+        id = tree.item(selected_item)['values'][0]
+        nome = entry_nome.get()
+        email = entry_email.get()
+        if nome and email:
+            conn = conectar()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE usuarios SET nome = %s, email = %s WHERE id = %s", (nome, email, id))
+            conn.commit()
+            conn.close()
+            carregar_dados()
+            limpar_campos()
+        else:
+            messagebox.showwarning("Atenção", "Preencha todos os campos!")
+    else:
+        messagebox.showwarning("Atenção", "Selecione um usuário!")
+
+def deletar():
+    selected_item = tree.selection()
+    if selected_item:
+        id = tree.item(selected_item)['values'][0]
+        conn = conectar()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+        conn.commit()
+        conn.close()
+        carregar_dados()
+        limpar_campos()
+    else:
+        messagebox.showwarning("Atenção", "Selecione um usuário!")
+
+def carregar_dados():
+    for i in tree.get_children():
+        tree.delete(i)
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM usuarios")
+    for row in cursor.fetchall():
+        tree.insert("", tk.END, values=row)
+    conn.close()
+
+def selecionar_linha(event):
+    selected_item = tree.selection()
+    if selected_item:
+        item = tree.item(selected_item)
+        entry_nome.delete(0, tk.END)
+        entry_email.delete(0, tk.END)
+        entry_nome.insert(0, item['values'][1])
+        entry_email.insert(0, item['values'][2])
+
+def limpar_campos():
+    entry_nome.delete(0, tk.END)
+    entry_email.delete(0, tk.END)
+
+# Interface Gráfica (tkinter)
+root = tk.Tk()
+root.title("CRUD MySQL com Tkinter")
+root.geometry("500x400")
+
+# Campos de Entrada
+tk.Label(root, text="Nome").pack()
+entry_nome = tk.Entry(root)
+entry_nome.pack()
+
+tk.Label(root, text="Email").pack()
+entry_email = tk.Entry(root)
+entry_email.pack()
+
+# Botões CRUD
+frame_buttons = tk.Frame(root)
+frame_buttons.pack()
+
+btn_inserir = tk.Button(frame_buttons, text="Inserir", command=inserir)
+btn_inserir.grid(row=0, column=0, padx=5, pady=5)
+
+btn_atualizar = tk.Button(frame_buttons, text="Atualizar", command=atualizar)
+btn_atualizar.grid(row=0, column=1, padx=5, pady=5)
+
+btn_deletar = tk.Button(frame_buttons, text="Deletar", command=deletar)
+btn_deletar.grid(row=0, column=2, padx=5, pady=5)
+
+# Tabela Treeview
+tree = ttk.Treeview(root, columns=("ID", "Nome", "Email"), show="headings")
+tree.heading("ID", text="ID")
+tree.heading("Nome", text="Nome")
+tree.heading("Email", text="Email")
+tree.pack(expand=True, fill='both')
+
+tree.bind("<ButtonRelease-1>", selecionar_linha)
+
+# Carregar dados iniciais
+carregar_dados()
+
+root.mainloop()
+
+pip install mysql-connector-python
+
